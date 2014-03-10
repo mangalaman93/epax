@@ -158,8 +158,8 @@ option_spec_list_for_search() ->
     [
      %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
      {help,        $h,        "help",        undefined,             "Show the program options"},
-     {names_only,  $n,        "names-only",  boolean,               "Search only package names, not decription"},
-     {full,        $f,        "full",        boolean,               "Show output identical to `show` is produced for each matched package"}
+     {names_only,  $n,        "names-only",  undefined,             "Search only package names (default is full search)"},
+     {full,        $f,        "full",        undefined,             "Show output identical to `show`, for each matched package"}
     ].
 
 print_help_for_search() ->

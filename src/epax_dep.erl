@@ -121,8 +121,15 @@ find_all_deps_for_helper(Appname) ->
 delete_standard_apps(Deps) ->
     lists:filter(fun(X) ->
         case code:lib_dir(X) of
-            {error, bad_name} -> true;
-            _ -> false
+            {error, bad_name} ->
+                true;
+            Path ->
+                case filename:basename(filename:dirname(Path)) of
+                    ?EPAX ->
+                        true;
+                    _ ->
+                        false
+                end
         end
     end,
     Deps).
