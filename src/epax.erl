@@ -52,6 +52,8 @@ main(["add"|Args]) ->
             epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
             print_help_for_add()
     end;
+main(["addpub"|Link]) ->
+    epax_app:add_pub(Link, []);
 main(["list"]) ->
     epax_app:list_apps();
 main(["remove"|[Appname]]) ->
@@ -122,6 +124,7 @@ Usage: ">>/binary, <<?EPAX>>/binary, <<" command [options]
 Commands:
   init                Initialize the index, deletes old index or packages if any
   add    <repo_link>  Add new package into index (repo must follow OTP structure)
+  addpub <pub_link>   Add publisher's index into local index
   list                List down all packages in the index in lexicographical order
   remove <appname>    Remove the package from index
   update              Update details of all packages in the index

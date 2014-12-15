@@ -32,11 +32,13 @@ init_test_() ->
         meck:expect(epax_os, get_abs_path, fun("") -> "loc" end),
         meck:expect(epax_os, mkdir, fun("loc") -> {ok, done} end),
         meck:expect(epax_index, init, fun() -> ok end),
+        meck:expect(epax_pub, init, fun() -> ok end),
         meck:expect(epax_com, success, fun("Index initialized successfully") -> ok end),
         ?assertEqual(ok, epax_app:init()),
         ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, [""])),
         ?assertEqual(1, meck:num_calls(epax_os, mkdir, ["loc"])),
         ?assertEqual(1, meck:num_calls(epax_index, init, [])),
+        ?assertEqual(1, meck:num_calls(epax_pub, init, [])),
         ?assertEqual(1, meck:num_calls(epax_com, success, ["Index initialized successfully"])),
         meck:validate([epax_com, epax_index, epax_os])
     end},

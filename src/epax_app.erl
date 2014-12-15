@@ -30,7 +30,8 @@
          check/0,
          bundle/1,
          show/1,
-         format_app/1]).
+         format_app/1,
+         add_pub/2]).
 
 
 %%============================================================================
@@ -46,6 +47,7 @@ init() ->
     EpaxLoc = epax_os:get_abs_path(""),
     epax_os:mkdir(EpaxLoc),
     epax_index:init(),
+    epax_pub:init(),
     epax_com:success("Index initialized successfully").
 
 %% add_app/2
@@ -172,6 +174,28 @@ format_app(App) ->
     FmtdDetails = format_details(Appname, App#application.details),
     Eqs = string:copies("=", 9-round(length(atom_to_list(Appname))/2)),
     epax_com:format("~s ~s ~s~s~n", [Eqs, Appname, Eqs, FmtdDetails]).
+
+%% add_pub/1
+%% ====================================================================
+%% @doc adds a publisher into the index
+-spec add_pub(Link, Options) -> ok when
+    Link    :: string(),
+    Options :: [term()].
+%% ====================================================================
+add_pub(Link, Options) ->
+    case epax_pub:pub_exists(Link) of
+        {ok, false} ->
+            case epax_pub:add_pub(Link, Options) of
+                {ok, Publisher} ->
+                    epax_com:success("Added ~s to index", [Publisher]);
+                {error, Reason} ->
+                    epax_com:error(Reason, "Unable to add publisher to index")
+            end;
+        {ok, Publisher} ->
+            epax_com:error(already_added, "~s is already added to index", [Publisher]);
+        {error, Reason} ->
+             epax_com:error(Reason, "Unable to add to index")
+    end.
 
 
 %%%===================================================================
