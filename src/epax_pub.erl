@@ -69,8 +69,13 @@ add_pub(_Link, _Options) ->
     Pub    :: atom(),
     Reason :: term().
 %% ====================================================================
-pub_exists(_Info) ->
-    {ok, false}.
+pub_exists(Info) ->
+    case file:consult(epax_os:get_abs_path("publisher.cfg")) of
+        {ok, [ExistingPubs]} ->
+            {ok, pub_exists(Info, ExistingPubs)};
+        {error, _} ->
+            {error, "Run `epax init` before running other epax commands"}
+    end.
 
 
 %%%===================================================================
@@ -79,3 +84,20 @@ pub_exists(_Info) ->
 
 write_to_publisher_file(Data) ->
     file:write_file(epax_os:get_abs_path("publisher.cfg"), io_lib:fwrite("~p.\n", [Data])).
+
+pub_exists(Info, ExistingPubs) when is_list(Info) ->
+    case lists:keyfind(Info, #publisher.index_link, ExistingPubs) of
+        false ->
+            false;
+        App ->
+            App#publisher.name
+    end;
+pub_exists(Info, ExistingPubs) when is_atom(Info) ->
+    case lists:keyfind(Info, #publisher.name, ExistingPubs) of
+        false ->
+            false;
+        App ->
+            App#publisher.name
+    end;
+pub_exists(_, _) ->
+    false.

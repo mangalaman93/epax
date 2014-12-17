@@ -44,3 +44,76 @@ init_test_() ->
         ?assertEqual(1, meck:num_calls(epax_os, rmdir, ["publisher/*"])),
         ?assertEqual(1, meck:num_calls(file, write_file, ["publisher.cfg", ["[]",46,10]]))
     end}]}.
+
+pub_exists_test_() ->
+    {foreach,
+    fun() -> meck:new([epax_os, file], [unstick, passthrough]) end,
+    fun(_) -> meck:unload([epax_os, file]) end,
+    [{"test for pub_exists when publisher index is not found",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("publisher.cfg") -> {error, "error"} end),
+
+        ?assertEqual({error, "Run `epax init` before running other epax commands"},
+                     epax_pub:pub_exists(publisher)),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["publisher.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["publisher.cfg"]))
+    end},
+    {"test for pub_exists when publisher index is empty",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("publisher.cfg") -> {ok, [[]]} end),
+
+        ?assertEqual({ok, false}, epax_pub:pub_exists(publisher)),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["publisher.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["publisher.cfg"]))
+    end},
+    {"test for pub_exists when publisher does not exist",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("publisher.cfg") -> {ok, [[#publisher{name=pub1, index_link="link1", packages=[a,b,c], local_index=[]},
+                                                                  #publisher{name=pub2, index_link="link2", packages=[d,e,f], local_index=[]}]]} end),
+        ?assertEqual({ok, false}, epax_pub:pub_exists(publisher)),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["publisher.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["publisher.cfg"]))
+    end},
+    {"test for pub_exists when given publisher index link",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("publisher.cfg") -> {ok, [[#publisher{name=pub1, index_link="link1", packages=[a,b,c], local_index=[]},
+                                                                  #publisher{name=pub2, index_link="link2", packages=[d,e,f], local_index=[]}]]} end),
+
+        ?assertEqual({ok, pub1}, epax_pub:pub_exists("link1")),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["publisher.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["publisher.cfg"]))
+    end},
+    {"test for pub_exists when given publisher index link not found",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("publisher.cfg") -> {ok, [[#publisher{name=pub1, index_link="link1", packages=[a,b,c], local_index=[]},
+                                                                  #publisher{name=pub2, index_link="link2", packages=[d,e,f], local_index=[]}]]} end),
+
+        ?assertEqual({ok, false}, epax_pub:pub_exists("link3")),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["publisher.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["publisher.cfg"]))
+    end},
+    {"test for pub_exists when function is called wrong",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("publisher.cfg") -> {ok, [[#publisher{name=pub1, index_link="link1", packages=[a,b,c], local_index=[]},
+                                                                  #publisher{name=pub2, index_link="link2", packages=[d,e,f], local_index=[]}]]} end),
+
+        ?assertEqual({ok, false}, epax_pub:pub_exists({})),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["publisher.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["publisher.cfg"]))
+    end},
+    {"test for pub_exists",
+    fun() ->
+        meck:expect(epax_os, get_abs_path, fun(X) -> X end),
+        meck:expect(file, consult, fun("publisher.cfg") -> {ok, [[#publisher{name=pub1, index_link="link1", packages=[a,b,c], local_index=[]},
+                                                                  #publisher{name=pub2, index_link="link2", packages=[d,e,f], local_index=[]}]]} end),
+
+        ?assertEqual({ok, pub2}, epax_pub:pub_exists(pub2)),
+        ?assertEqual(1, meck:num_calls(epax_os, get_abs_path, ["publisher.cfg"])),
+        ?assertEqual(1, meck:num_calls(file, consult, ["publisher.cfg"]))
+    end}]}.

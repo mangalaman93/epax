@@ -25,3 +25,4 @@
 
 % index entry record
 -record(application, {name, repo_link, repo_type, details}).
+-record(publisher, {name, index_link, local_index, packages}).
