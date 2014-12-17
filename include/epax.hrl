@@ -25,4 +25,5 @@
 
 % index entry record
 -record(application, {name, repo_link, repo_type, details}).
--record(publisher, {name, index_link, local_index, packages}).
+% publisher entry record
+-record(publisher, {name, remote_index, local_index, packages}).

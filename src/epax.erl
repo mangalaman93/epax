@@ -35,87 +35,33 @@ main([]) ->
     print_help();
 main(["init"]) ->
     epax_app:init();
+main(["config"|Args]) ->
+    handle_config_args(Args);
 main(["add"|Args]) ->
-    OptSpecList = option_spec_list_for_add(),
-    case getopt:parse(OptSpecList, Args) of
-        {ok, {[help], []}} ->
-            print_help_for_add();
-        {ok, {_, []}} ->
-            epax_com:console("** Invalid command (repo_link not found).~n~n", []),
-            print_help_for_add();
-        {ok, {Options, [Link]}} ->
-            epax_app:add_app(Link, Options);
-        {ok, {_, NonOptArgs}} ->
-            epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
-            print_help_for_add();
-        {error, {Reason, Data}} ->
-            epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
-            print_help_for_add()
-    end;
-main(["addpub"|Link]) ->
-    epax_app:add_pub(Link, []);
+    handle_parsed_options_for_add(getopt:parse(option_spec_list_for_add(), Args));
 main(["list"]) ->
     epax_app:list_apps();
 main(["remove"|[Appname]]) ->
-    epax_app:remove_app(list_to_atom(Appname));
+    epax_app:remove_app(erlang:list_to_atom(Appname));
 main(["update"]) ->
     epax_app:update();
 main(["check"]) ->
     epax_app:check();
+main(["publisher"|Args]) ->
+    handle_publisher_args(Args);
 main(["bundle"|[Appname]]) ->
-    epax_app:bundle(list_to_atom(Appname));
+    epax_app:bundle(erlang:list_to_atom(Appname));
 main(["show"|[Appname]]) ->
-    epax_app:show(list_to_atom(Appname));
+    epax_app:show(erlang:list_to_atom(Appname));
 main(["search"|Args]) ->
-    OptSpecList = option_spec_list_for_search(),
-    case getopt:parse(OptSpecList, Args) of
-        {ok, {[help], []}} ->
-            print_help_for_search();
-        {ok, {_, []}} ->
-            epax_com:console("** Invalid command (regex not found).~n~n", []),
-            print_help_for_search();
-        {ok, {Options, [Regex]}} ->
-            epax_index:search(Regex, Options);
-        {ok, {_, NonOptArgs}} ->
-            epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
-            print_help_for_search();
-        {error, {Reason, Data}} ->
-            epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
-            print_help_for_search()
-    end;
+  handle_parsed_options_for_search(getopt:parse(option_spec_list_for_search(), Args));
 main(Args) ->
-    OptSpecList = option_spec_list(),
-    case getopt:parse(OptSpecList, Args) of
-        {ok, {Options, []}} ->
-            handle_options(Options);
-        {ok, {_, NonOptArgs}} ->
-            epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
-            print_help();
-        {error, {Reason, Data}} ->
-            epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
-            print_help()
-    end.
+    handle_parsed_options(getopt:parse(option_spec_list(), Args)).
 
 
 %%%===================================================================
 %%% Internal Functions
 %%%===================================================================
-
-% main options
-option_spec_list() ->
-    [
-     %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
-     {help,        $h,        "help",        undefined,             "Show the program options"},
-     {version,     $v,        "version",     undefined,             "Show the current version"}
-    ].
-
-handle_options([help]) ->
-    print_help();
-handle_options([version]) ->
-    print_version();
-handle_options(Options) ->
-    epax_com:console("** Invalid options: ~p.~n", [Options]),
-    print_help().
 
 print_help() ->
     HelpMessage = << <<?EPAX>>/binary, <<" (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
@@ -123,15 +69,16 @@ Usage: ">>/binary, <<?EPAX>>/binary, <<" command [options]
 
 Commands:
   init                Initialize the index, deletes old index or packages if any
+  config [subcmd]     Change default configuration for epax
   add    <repo_link>  Add new package into index (repo must follow OTP structure)
-  addpub <pub_link>   Add publisher's index into local index
   list                List down all packages in the index in lexicographical order
   remove <appname>    Remove the package from index
   update              Update details of all packages in the index
   check               Try to fix broken packages if any, updates the index as well
+  publisher [subcmd]  Carry out publisher related operations
   bundle <appname>    Compute and copy non-standard dependencies for the pacakge
   show   <appname>    Print detailed information of the package
-  search <regex>      Performs full text search on available package lists
+  search <regex>      Perform full text search on available package lists
 
 Options:
   -h, --help          Show the commands and options (this message)
@@ -140,10 +87,8 @@ Options:
 ">>/binary>>,
     io:put_chars(HelpMessage).
 
-print_version() ->
-    VersionMessage = << <<?EPAX>>/binary, <<" (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
-">>/binary >>,
-    io:put_chars(VersionMessage).
+% config sub-subcommands
+handle_config_args() ->
 
 % help subcommand add
 option_spec_list_for_add() ->
@@ -153,10 +98,31 @@ option_spec_list_for_add() ->
      {repo_type,   $r,        "repo",        string,                "Specify type of repository (git, bzr, svn)"}
     ].
 
+handle_parsed_options_for_add({ok, {[help], []}}) ->
+    print_help_for_add();
+handle_parsed_options_for_add({ok, {_, []}}) ->
+    epax_com:console("** Invalid command (repo_link not found).~n~n", []),
+    print_help_for_add();
+handle_parsed_options_for_add({ok, {Options, [Link]}}) ->
+    epax_app:add_app(Link, Options);
+handle_parsed_options_for_add({ok, {_, NonOptArgs}}) ->
+    epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
+    print_help_for_add();
+handle_parsed_options_for_add({error, {Reason, Data}}) ->
+    epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
+    print_help_for_add().
+
 print_help_for_add() ->
     getopt:usage(option_spec_list_for_add(), ?EPAX).
 
-% help subcommand add
+% publisher sub-subcommands
+handle_publisher_args(["add"|Args])
+handle_publisher_args(["list"|Args])
+handle_publisher_args(["remove"|Args])
+handle_publisher_args(["update"|Args])
+handle_publisher_args(["show"|Args])
+
+% help subcommand search
 option_spec_list_for_search() ->
     [
      %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
@@ -165,5 +131,49 @@ option_spec_list_for_search() ->
      {full,        $f,        "full",        undefined,             "Show output identical to `show`, for each matched package"}
     ].
 
+handle_parsed_options_for_search({ok, {[help], []}}) ->
+    print_help_for_search();
+handle_parsed_options_for_search({ok, {_, []}}) ->
+    epax_com:console("** Invalid command (regex not found).~n~n", []),
+    print_help_for_search();
+handle_parsed_options_for_search({ok, {Options, [Regex]}}) ->
+    epax_index:search(Regex, Options);
+handle_parsed_options_for_search({ok, {_, NonOptArgs}}) ->
+    epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
+    print_help_for_search();
+handle_parsed_options_for_search({error, {Reason, Data}}) ->
+    epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
+    print_help_for_search().
+
 print_help_for_search() ->
     getopt:usage(option_spec_list_for_search(), ?EPAX).
+
+% main options
+option_spec_list() ->
+    [
+     %% {Name,     ShortOpt,  LongOpt,       ArgSpec,               HelpMsg}
+     {help,        $h,        "help",        undefined,             "Show the program options"},
+     {version,     $v,        "version",     undefined,             "Show the current version"}
+    ].
+
+handle_parsed_options({ok, {Options, []}}) ->
+    handle_options(Options);
+handle_parsed_options({ok, {_, NonOptArgs}}) ->
+    epax_com:console("** Invalid non option arguments: ~p.~n~n", [NonOptArgs]),
+    print_help();
+handle_parsed_options({error, {Reason, Data}}) ->
+    epax_com:console("** Error: ~s ~p.~n", [Reason, Data]),
+    print_help().
+
+handle_options([help]) ->
+    print_help();
+handle_options([version]) ->
+    print_version();
+handle_options(Options) ->
+    epax_com:console("** Invalid options: ~p.~n", [Options]),
+    print_help().
+
+print_version() ->
+    VersionMessage = << <<?EPAX>>/binary, <<" (Erlang Package Manager) version ">>/binary, <<?VERSION>>/binary, <<"
+">>/binary >>,
+    io:put_chars(VersionMessage).
