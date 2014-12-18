@@ -24,6 +24,7 @@
 -define(VERSION, "1.0.0").
 
 % index entry record
--record(application, {name, repo_link, repo_type, details}).
+-record(application, {name, remotelink, repotype, info}).
+
 % publisher entry record
--record(publisher, {name, remote_index, local_index, packages}).
+-record(publisher, {name, remotelink, localpath, packages}).
